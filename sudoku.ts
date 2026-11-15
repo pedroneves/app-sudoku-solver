@@ -1,5 +1,6 @@
 class Cell {
   private _value?: number
+  private possibilities = new Set<number>()
 
   constructor(
     public readonly row: number,
@@ -28,30 +29,117 @@ class Cell {
   get isEmpty() {
     return this.value === undefined
   }
+
+  addPossibility(num: number): void {
+    if (!isValidValue(num)) return
+    this.possibilities.add(num)
+  }
+
+  removePossibility(num: number): void {
+    if (!isValidValue(num)) return
+    this.possibilities.delete(num)
+  }
+
+  clearPossibilities(): void {
+    this.possibilities.clear()
+  }
+}
+
+abstract class Component extends Set<Cell> {
+  abstract isValid(): boolean
+}
+
+class Row extends Component {
+  override isValid(): boolean {
+    let rowIdx: number | null = null;
+    const elements: Array<Cell> = new Array(9)
+    
+    for (const cell of this.values()) {
+      // The row index should be the same for every cell
+      if (rowIdx === null) rowIdx = cell.row
+
+      // Found a cell from another row
+      if (cell.row !== rowIdx) return false
+
+      // The set contains another cell for the same row and column
+      if (elements[cell.col]) return false
+
+      // Assign the current cell for the column
+      elements[cell.col] = cell
+    }
+
+    return true
+  }
+}
+
+class Col extends Component {
+  override isValid(): boolean {
+    let colIdx: number | null = null;
+    const elements: Array<Cell> = new Array(9)
+
+    for (const cell of this.values()) {
+      // The column index should be the same for every cell
+      if (colIdx === null) colIdx = cell.col
+
+      // Found a cell from another column
+      if (cell.col !== colIdx) return false
+
+      // The set contains another cell for the same column and row
+      if (elements[cell.row]) return false
+
+      // Assign the current cell for the row
+      elements[cell.row] = cell
+    }
+
+    return true
+  }
+}
+
+class Quad extends Component {
+  override isValid(): boolean {
+    let quadIdx: number | null = null;
+    const elements: Array<Cell> = new Array(9)
+
+    for (const cell of this.values()) {
+      const cellQuad = quad(cell.row, cell.col)
+
+      // The quadrant index should be the same for every cell
+      if (quadIdx === null) quadIdx = cellQuad
+
+      // Found a cell from another quadrant
+      if (cellQuad !== quadIdx) return false
+
+      // Position of the cell inside the quadrant (0-8, row by row)
+      const position = (cell.row % 3) * 3 + (cell.col % 3)
+
+      // The set contains another cell for the same position
+      if (elements[position]) return false
+
+      // Assign the current cell for the position
+      elements[position] = cell
+    }
+
+    return true
+  }
 }
 
 export class Sudoku {
   private cells: Set<Cell> = new Set<Cell>()
-  private cellById = new Map<ReturnType<typeof genIdByCoords>, Cell>()
-  private rowsIndex = new Map<number, Set<Cell>>()
-  private colsIndex = new Map<number, Set<Cell>>()
-  private quadsIndex = new Map<number, Set<Cell>>()
-
+  private cellById = new Map<ReturnType<GenIdByCoords>, Cell>()
+  private rowsIndex = new Map<number, Row>()
+  private colsIndex = new Map<number, Col>()
+  private quadsIndex = new Map<number, Quad>()
 
   constructor() {
     for (let row = 0; row < 9; row++) {
       for (let col = 0; col < 9; col++) {
-        // inits the colsIndex
-        if (!this.colsIndex.has(row)) {
-          this.colsIndex.set(row, new Set<Cell>())
-        }
         
         const cell = new Cell(row, col)
         this.cells.add(cell)
         this.cellById.set(cell.id, cell)
-        this.rowsIndex.getOrInsertComputed(row, genCellSet).add(cell)
-        this.colsIndex.getOrInsertComputed(col, genCellSet).add(cell)
-        this.quadsIndex.getOrInsertComputed(quad(row, col), genCellSet).add(cell)
+        this.rowsIndex.getOrInsertComputed(row, genEmptyRow).add(cell)
+        this.colsIndex.getOrInsertComputed(col, genEmptyCol).add(cell)
+        this.quadsIndex.getOrInsertComputed(quad(row, col), genEmptyQuad).add(cell)
       }
     }
   }
@@ -60,43 +148,30 @@ export class Sudoku {
     this.getCell(row, col).value = value
   }
 
+  setPossibleValuesetValue(row: number, col:number, possibleVal: number) {
+    this.getCell(row, col).addPossibility(possibleVal)
+  }
+
   getValue(row: number, col: number): number | undefined {
     return this.getCell(row, col).value
   }
 
   /** Returns the values of a row, left to right. Empty cells are `undefined`. */
-  getRow(row: number): Array<number | undefined> {
-    return this.getValues(this.rowsIndex, row, 'Row')
+  getRow(row: number): Row {
+    return this.rowsIndex.getOrInsertComputed(row, genEmptyRow)
   }
 
   /** Returns the values of a column, top to bottom. Empty cells are `undefined`. */
-  getCol(col: number): Array<number | undefined> {
-    return this.getValues(this.colsIndex, col, 'Column')
+  getCol(col: number): Col {
+    return this.colsIndex.getOrInsertComputed(col, genEmptyCol)
   }
 
   /**
    * Returns the values of a quadrant, row by row. Empty cells are `undefined`.
    * Quadrants are numbered as in {@link quad}.
    */
-  getQuad(quadrant: number): Array<number | undefined> {
-    return this.getValues(this.quadsIndex, quadrant, 'Quadrant')
-  }
-
-  private getValues(
-    index: Map<number, Set<Cell>>,
-    key: number,
-    label: string,
-  ): Array<number | undefined> {
-    if (!isInBounds(key)) {
-      throw new SudokuError(`${label} ${key} is out of bounds, expected 0-8`)
-    }
-
-    const cells = index.get(key)
-    if (!cells) {
-      throw new SudokuError(`${label} ${key} not found`)
-    }
-
-    return Array.from(cells, (cell) => cell.value)
+  getQuad(quad: number): Quad {
+    return this.quadsIndex.getOrInsertComputed(quad, genEmptyQuad)
   }
 
   private getCell(row: number, col: number): Cell {
@@ -123,15 +198,20 @@ export class SudokuError extends Error {
   }
 }
 
-/**
- * Creates an empty set of cells.
- *
- * Used as the factory for `Map.getOrInsertComputed` when building the indexes.
- *
- * @returns A new, empty `Set<Cell>`.
- */
-function genCellSet() {
-  return new Set<Cell>()
+function genEmptySet<T extends Set<Cell>>(Klass: new () => T) {
+  return new Klass()
+}
+
+function genEmptyRow() {
+  return genEmptySet(Row)
+}
+
+function genEmptyCol() {
+  return genEmptySet(Col)
+}
+
+function genEmptyQuad() {
+  return genEmptySet(Quad)
 }
 
 /**
@@ -205,3 +285,5 @@ function isValidValue(value: number): boolean {
 function genIdByCoords(row: number, col: number): number {
   return (row * 17) + col
 }
+
+type GenIdByCoords = typeof genIdByCoords

@@ -169,6 +169,21 @@ export class Sudoku {
     return this.quadsIndex.getOrInsertComputed(quad, genEmptyQuad)
   }
 
+  /**
+   * Checks whether the board follows the Sudoku rules: no value repeats in any row, column or quadrant.
+   *
+   * Empty cells are ignored, so a partially filled board can still be valid.
+   */
+  isValid(): boolean {
+    for (let idx = 0; idx < 9; idx++) {
+      if (!validateRow(this.getRow(idx))) return false
+      if (!validateCol(this.getCol(idx))) return false
+      if (!validateQuad(this.getQuad(idx))) return false
+    }
+
+    return true
+  }
+
   private getCell(row: number, col: number): Cell {
     if (!isInBounds(row)) {
       throw new SudokuError(`Row ${row} is out of bounds, expected 0-8`)
@@ -282,3 +297,90 @@ function genIdByCoords(row: number, col: number): number {
 }
 
 type GenIdByCoords = typeof genIdByCoords
+
+/**
+ * Checks whether a row follows the Sudoku rules: no value appears more than once.
+ *
+ * Empty cells are ignored, so a partially filled row can still be valid.
+ *
+ * @param row The row to validate.
+ * @returns `true` if the row is well formed and has no repeated values.
+ */
+function validateRow(row: Row): boolean {
+  // The row should only hold cells from a single row, one per column
+  if (!row.isValid()) return false
+
+  const seen = new Set<number>()
+
+  for (const cell of row) {
+    const value = cell.value
+
+    // Empty cells don't break the rules
+    if (value === undefined) continue
+
+    // The same value appears twice in the row
+    if (seen.has(value)) return false
+
+    seen.add(value)
+  }
+
+  return true
+}
+
+/**
+ * Checks whether a column follows the Sudoku rules: no value appears more than once.
+ *
+ * Empty cells are ignored, so a partially filled column can still be valid.
+ *
+ * @param col The column to validate.
+ * @returns `true` if the column is well formed and has no repeated values.
+ */
+function validateCol(col: Col): boolean {
+  // The column should only hold cells from a single column, one per row
+  if (!col.isValid()) return false
+
+  const seen = new Set<number>()
+
+  for (const cell of col) {
+    const value = cell.value
+
+    // Empty cells don't break the rules
+    if (value === undefined) continue
+
+    // The same value appears twice in the column
+    if (seen.has(value)) return false
+
+    seen.add(value)
+  }
+
+  return true
+}
+
+/**
+ * Checks whether a quadrant follows the Sudoku rules: no value appears more than once.
+ *
+ * Empty cells are ignored, so a partially filled quadrant can still be valid.
+ *
+ * @param quad The quadrant to validate.
+ * @returns `true` if the quadrant is well formed and has no repeated values.
+ */
+function validateQuad(quad: Quad): boolean {
+  // The quadrant should only hold cells from a single quadrant, one per position
+  if (!quad.isValid()) return false
+
+  const seen = new Set<number>()
+
+  for (const cell of quad) {
+    const value = cell.value
+
+    // Empty cells don't break the rules
+    if (value === undefined) continue
+
+    // The same value appears twice in the quadrant
+    if (seen.has(value)) return false
+
+    seen.add(value)
+  }
+
+  return true
+}

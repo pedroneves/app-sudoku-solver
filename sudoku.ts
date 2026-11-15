@@ -39,14 +39,20 @@ class Cell {
   clearPossibilities(): void {
     this.possibilities.clear()
   }
+
+  /** Copies the value and possibilities of another cell into this one. Nothing is shared between the two. */
+  copyFrom(other: Cell): void {
+    this.value = other.value
+    this.possibilities = new Set(other.possibilities)
+  }
 }
 
 abstract class Component extends Set<Cell> {
-  abstract isValid(): boolean
+  abstract hasValidStructure(): boolean
 }
 
 class Row extends Component {
-  override isValid(): boolean {
+  override hasValidStructure(): boolean {
     let rowIdx: number | null = null
     const elements: Array<Cell> = new Array(9)
 
@@ -69,7 +75,7 @@ class Row extends Component {
 }
 
 class Col extends Component {
-  override isValid(): boolean {
+  override hasValidStructure(): boolean {
     let colIdx: number | null = null
     const elements: Array<Cell> = new Array(9)
 
@@ -92,7 +98,7 @@ class Col extends Component {
 }
 
 class Quad extends Component {
-  override isValid(): boolean {
+  override hasValidStructure(): boolean {
     let quadIdx: number | null = null
     const elements: Array<Cell> = new Array(9)
 
@@ -182,6 +188,17 @@ export class Sudoku {
     }
 
     return true
+  }
+
+  /** Returns a deep copy of the board. Changes to the copy don't affect the original. */
+  clone(): Sudoku {
+    const copy = new Sudoku()
+
+    for (const cell of this.cells) {
+      copy.getCell(cell.row, cell.col).copyFrom(cell)
+    }
+
+    return copy
   }
 
   private getCell(row: number, col: number): Cell {
@@ -308,7 +325,7 @@ type GenIdByCoords = typeof genIdByCoords
  */
 function validateRow(row: Row): boolean {
   // The row should only hold cells from a single row, one per column
-  if (!row.isValid()) return false
+  if (!row.hasValidStructure()) return false
 
   const seen = new Set<number>()
 
@@ -337,7 +354,7 @@ function validateRow(row: Row): boolean {
  */
 function validateCol(col: Col): boolean {
   // The column should only hold cells from a single column, one per row
-  if (!col.isValid()) return false
+  if (!col.hasValidStructure()) return false
 
   const seen = new Set<number>()
 
@@ -366,7 +383,7 @@ function validateCol(col: Col): boolean {
  */
 function validateQuad(quad: Quad): boolean {
   // The quadrant should only hold cells from a single quadrant, one per position
-  if (!quad.isValid()) return false
+  if (!quad.hasValidStructure()) return false
 
   const seen = new Set<number>()
 

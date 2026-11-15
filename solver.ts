@@ -1,1 +1,1 @@
-import { Sudoku, SudokuError } from './sudoku.ts'
+import { Sudoku, SudokuError } from "./sudoku.ts"

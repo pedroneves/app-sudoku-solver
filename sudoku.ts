@@ -2,11 +2,7 @@ class Cell {
   private _value?: number
   private possibilities = new Set<number>()
 
-  constructor(
-    public readonly row: number,
-    public readonly col: number,
-    value?: number,
-  ){
+  constructor(public readonly row: number, public readonly col: number, value?: number) {
     this.value = value
   }
 
@@ -51,9 +47,9 @@ abstract class Component extends Set<Cell> {
 
 class Row extends Component {
   override isValid(): boolean {
-    let rowIdx: number | null = null;
+    let rowIdx: number | null = null
     const elements: Array<Cell> = new Array(9)
-    
+
     for (const cell of this.values()) {
       // The row index should be the same for every cell
       if (rowIdx === null) rowIdx = cell.row
@@ -74,7 +70,7 @@ class Row extends Component {
 
 class Col extends Component {
   override isValid(): boolean {
-    let colIdx: number | null = null;
+    let colIdx: number | null = null
     const elements: Array<Cell> = new Array(9)
 
     for (const cell of this.values()) {
@@ -97,7 +93,7 @@ class Col extends Component {
 
 class Quad extends Component {
   override isValid(): boolean {
-    let quadIdx: number | null = null;
+    let quadIdx: number | null = null
     const elements: Array<Cell> = new Array(9)
 
     for (const cell of this.values()) {
@@ -133,7 +129,6 @@ export class Sudoku {
   constructor() {
     for (let row = 0; row < 9; row++) {
       for (let col = 0; col < 9; col++) {
-        
         const cell = new Cell(row, col)
         this.cells.add(cell)
         this.cellById.set(cell.id, cell)
@@ -144,11 +139,11 @@ export class Sudoku {
     }
   }
 
-  setValue(row: number, col:number, value: number) {
+  setValue(row: number, col: number, value: number) {
     this.getCell(row, col).value = value
   }
 
-  setPossibleValuesetValue(row: number, col:number, possibleVal: number) {
+  setPossibleValuesetValue(row: number, col: number, possibleVal: number) {
     this.getCell(row, col).addPossibility(possibleVal)
   }
 
@@ -194,7 +189,7 @@ export class Sudoku {
 export class SudokuError extends Error {
   constructor(message: string) {
     super(message)
-    this.name = 'SudokuError'
+    this.name = "SudokuError"
   }
 }
 
@@ -239,12 +234,12 @@ function quad(row: number, col: number): number {
   let quadrant = 0
 
   for (let quad = 0; quad < boundries.length; quad++) {
-    const [rowLimits, colLimits] = boundries[quad];
-    
+    const [rowLimits, colLimits] = boundries[quad]
+
     if (row >= rowLimits[0] && row < rowLimits[1]) {
       if (col >= colLimits[0] && col < colLimits[1]) {
         quadrant = quad
-        break 
+        break
       }
     }
   }

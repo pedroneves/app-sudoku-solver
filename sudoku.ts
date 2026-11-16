@@ -1,4 +1,4 @@
-class Cell {
+export class Cell {
   private _value?: number
   private _readonly = false
   private possibilities = new Set<number>()
@@ -237,6 +237,11 @@ export class Sudoku {
     return this.quadsIndex.getOrInsertComputed(quad, genEmptyQuad)
   }
 
+  /** Returns the cells that have no value. The cells are the board's own, not copies. */
+  getEmptyCells(): Set<Cell> {
+    return new Set(this.cells.values().filter((cell) => cell.isEmpty))
+  }
+
   /**
    * Checks whether the board follows the Sudoku rules: no value repeats in any row, column or quadrant.
    *
@@ -281,8 +286,8 @@ export class Sudoku {
 }
 
 export class SudokuError extends Error {
-  constructor(message: string) {
-    super(message)
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options)
     this.name = "SudokuError"
   }
 }

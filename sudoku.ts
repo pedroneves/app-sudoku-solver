@@ -76,6 +76,11 @@ class Cell {
     this.possibilities.clear()
   }
 
+  /** Returns the possibilities in ascending order. */
+  getPossibilities(): number[] {
+    return [...this.possibilities].sort((a, b) => a - b)
+  }
+
   /**
    * Copies the value, readonly flag and possibilities of another cell into this one.
    * Nothing is shared between the two. This overwrites the cell even if it's readonly.
@@ -203,6 +208,15 @@ export class Sudoku {
 
   getValue(row: number, col: number): number | undefined {
     return this.getCell(row, col).value
+  }
+
+  isReadonly(row: number, col: number): boolean {
+    return this.getCell(row, col).isReadonly
+  }
+
+  /** Returns the possibilities of a cell, in ascending order. */
+  getPossibilities(row: number, col: number): number[] {
+    return this.getCell(row, col).getPossibilities()
   }
 
   /** Returns the values of a row, left to right. Empty cells are `undefined`. */

@@ -1,17 +1,28 @@
 class Cell {
   private _value?: number
+  private _readonly = false
   private possibilities = new Set<number>()
 
-  constructor(public readonly row: number, public readonly col: number, value?: number) {
+  constructor(
+    public readonly row: number,
+    public readonly col: number,
+    value?: number,
+    readonly = false,
+  ) {
     this.value = value
+    this._readonly = readonly
   }
 
   get value(): number | undefined {
     return this._value
   }
 
-  /** Sets the cell value and clears its possibilities. `undefined` clears the cell. */
+  /**
+   * Sets the cell value and clears its possibilities. `undefined` clears the cell.
+   * Ignored if the cell is readonly and already has a value.
+   */
   set value(value: number | undefined) {
+    if (this.isLocked) return
     if (value !== undefined && !isValidValue(value)) {
       throw new SudokuError(`Value ${value} is invalid, expected an integer 1-9`)
     }
@@ -32,6 +43,24 @@ class Cell {
     return this.value === undefined
   }
 
+  get isReadonly() {
+    return this._readonly
+  }
+
+  /** `true` when the value can no longer change: the cell is readonly and has a value. */
+  get isLocked() {
+    return this._readonly && !this.isEmpty
+  }
+
+  /**
+   * Makes the cell readonly. This can't be undone.
+   *
+   * If the cell has a value, it can no longer change. If it's empty, it can be set once.
+   */
+  markReadonly(): void {
+    this._readonly = true
+  }
+
   /** Adds a possibility. Ignored if the cell already has a value. */
   addPossibility(num: number): void {
     if (!this.isEmpty || !isValidValue(num)) return
@@ -47,9 +76,13 @@ class Cell {
     this.possibilities.clear()
   }
 
-  /** Copies the value and possibilities of another cell into this one. Nothing is shared between the two. */
+  /**
+   * Copies the value, readonly flag and possibilities of another cell into this one.
+   * Nothing is shared between the two. This overwrites the cell even if it's readonly.
+   */
   copyFrom(other: Cell): void {
-    this.value = other.value
+    this._value = other._value
+    this._readonly = other._readonly
     this.possibilities = new Set(other.possibilities)
   }
 }
@@ -158,6 +191,10 @@ export class Sudoku {
 
   clearValue(row: number, col: number) {
     this.getCell(row, col).clearValue()
+  }
+
+  markReadonly(row: number, col: number) {
+    this.getCell(row, col).markReadonly()
   }
 
   setPossibleValuesetValue(row: number, col: number, possibleVal: number) {

@@ -10,12 +10,18 @@ class Cell {
     return this._value
   }
 
-  /** Sets the cell value. `undefined` clears the cell. */
+  /** Sets the cell value and clears its possibilities. `undefined` clears the cell. */
   set value(value: number | undefined) {
     if (value !== undefined && !isValidValue(value)) {
       throw new SudokuError(`Value ${value} is invalid, expected an integer 1-9`)
     }
     this._value = value
+    if (value !== undefined) this.clearPossibilities()
+  }
+
+  /** Removes the cell value, leaving it empty. */
+  clearValue(): void {
+    this.value = undefined
   }
 
   get id() {
@@ -26,8 +32,9 @@ class Cell {
     return this.value === undefined
   }
 
+  /** Adds a possibility. Ignored if the cell already has a value. */
   addPossibility(num: number): void {
-    if (!isValidValue(num)) return
+    if (!this.isEmpty || !isValidValue(num)) return
     this.possibilities.add(num)
   }
 
@@ -147,6 +154,10 @@ export class Sudoku {
 
   setValue(row: number, col: number, value: number) {
     this.getCell(row, col).value = value
+  }
+
+  clearValue(row: number, col: number) {
+    this.getCell(row, col).clearValue()
   }
 
   setPossibleValuesetValue(row: number, col: number, possibleVal: number) {

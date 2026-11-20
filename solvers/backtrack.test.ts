@@ -1,7 +1,7 @@
 import { assert, assertEquals, assertInstanceOf } from "@std/assert"
-import { type SudokuJSON, SudokuJSONDeserializer } from "./serde.ts"
-import { BacktrackSolver } from "./solver.ts"
-import { Sudoku } from "./sudoku.ts"
+import { type SudokuJSON, SudokuJSONDeserializer } from "../serde.ts"
+import { BacktrackSolver } from "./backtrack.ts"
+import { Sudoku } from "../sudoku.ts"
 
 /** Classic puzzle that needs backtracking with a naive row-major search. "." is an empty cell. */
 const PUZZLE = [
